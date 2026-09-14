@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: guardian
+      POSTGRES_PASSWORD: guardian
+      POSTGRES_DB: guardian
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Servidor de voz / vídeo / compartilhamento de tela (WebRTC).
+  # Em modo --dev usa as chaves devkey / secret. Para produção, veja o README.
+  # network_mode: host evita problemas de NAT do WebRTC dentro do Docker (Linux).
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --dev --bind 0.0.0.0
+    network_mode: host
+
+volumes:
+  pgdata:

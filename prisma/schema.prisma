@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Usuários e cargos ─────────────────────────
+
+enum Role {
+  DEV
+  PRESIDENTE
+  VICE_PRESIDENTE
+  COORDENADOR
+  PLENO
+  JUNIOR
+}
+
+enum UserStatus {
+  PENDENTE
+  ATIVO
+  INATIVO
+}
+
+// Áreas (Frentes) da entidade — cadastráveis, pois novas frentes serão abertas com o tempo.
+model Area {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  // Área global (ex.: Registro): aberta a todos os alunos Juniors e Plenos
+  isGlobal      Boolean  @default(false)
+  order         Int      @default(0)
+  // 1 coordenador por área
+  coordinatorId String?  @unique
+  coordinator   User?    @relation("AreaCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+
+  members     AreaMember[]
+  projects    Project[]
+  meetings    Meeting[]
+  hourEntries HourEntry[]
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  ra           String?
+  course       String?
+  role         Role       @default(JUNIOR)
+  status       UserStatus @default(PENDENTE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  coordinatedArea    Area?              @relation("AreaCoordinator")
+  sessions           Session[]
+  areaMemberships    AreaMember[]
+  lessonProgress     LessonProgress[]
+  promotionRequests  PromotionRequest[] @relation("PromotionUser")
+  reviewedPromotions PromotionRequest[] @relation("PromotionReviewer")
+  projectMemberships ProjectMember[]
+  createdProjects    Project[]
+  messages           Message[]
+  files              ProjectFile[]
+  hourEntries        HourEntry[]        @relation("HourEntryUser")
+  reviewedHours      HourEntry[]        @relation("HourEntryReviewer")
+  financeEntries     FinanceEntry[]
+  meetings           Meeting[]
+  events             Event[]
+  eventResponses     EventResponse[]
+  selectionProcesses SelectionProcess[]
+}
+
+model Session {
+  id        String   @id // sha256 do token do cookie
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AreaMember {
+  userId   String
+  areaId   String
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area     Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@id([userId, areaId])
+}
+
+// ───────────────────────── Capacitação ─────────────────────────
+
+model Course {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  order            Int      @default(0)
+  // Concluir todas as aulas deste curso gera a solicitação de promoção a Pleno
+  requiredForPleno Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  lessons          Lesson[]
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  youtubeUrl  String
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  progress    LessonProgress[]
+}
+
+model LessonProgress {
+  userId      String
+  lessonId    String
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([userId, lessonId])
+}
+
+enum RequestStatus {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+model PromotionRequest {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation("PromotionUser", fields: [userId], references: [id], onDelete: Cascade)
+  status     RequestStatus @default(PENDENTE)
+  note       String?
+  reviewerId String?
+  reviewer   User?         @relation("PromotionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt DateTime?
+  createdAt  DateTime      @default(now())
+}
+
+// ───────────────────────── Projetos, salas e arquivos ─────────────────────────
+
+enum ProjectStatus {
+  ATIVO
+  PAUSADO
+  CONCLUIDO
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  areaId        String
+  area          Area          @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  repositoryUrl String?
+  status        ProjectStatus @default(ATIVO)
+  creatorId     String
+  creator       User          @relation(fields: [creatorId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  members  ProjectMember[]
+  files    ProjectFile[]
+  room     Room?
+  meetings Meeting[]
+
+  @@index([areaId])
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  isLead    Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+}
+
+model ProjectFile {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploaderId   String
+  uploader     User     @relation(fields: [uploaderId], references: [id])
+  originalName String
+  storedName   String   @unique
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+}
+
+enum RoomKind {
+  PROJETO
+  REUNIAO
+  COORDENACAO
+}
+
+// Sala com chat de texto + chamada de voz/tela (LiveKit usa o id como nome da sala)
+model Room {
+  id        String    @id @default(cuid())
+  kind      RoomKind
+  name      String
+  projectId String?   @unique
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingId String?   @unique
+  meeting   Meeting?  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startsAt    DateTime
+  durationMin Int?
+  location    String?
+  // null = reunião da coordenação
+  areaId      String?
+  area        Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+  createdAt   DateTime @default(now())
+  room        Room?
+}
+
+// ───────────────────────── Horas ─────────────────────────
+
+enum HourStatus {
+  VALIDO
+  INVALIDADO
+}
+
+model HourEntry {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation("HourEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime   @db.Date
+  hours      Decimal    @db.Decimal(5, 2)
+  areaId     String?
+  area       Area?      @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  activity   String
+  status     HourStatus @default(VALIDO)
+  reviewerId String?
+  reviewer   User?      @relation("HourEntryReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewNote String?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, date])
+}
+
+// ───────────────────────── Financeiro ─────────────────────────
+
+enum FinanceType {
+  ENTRADA
+  SAIDA
+}
+
+model FinanceEntry {
+  id          String      @id @default(cuid())
+  date        DateTime    @db.Date
+  description String
+  category    String
+  type        FinanceType
+  amount      Decimal     @db.Decimal(12, 2)
+  notes       String?
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+
+  @@index([date])
+}
+
+// ───────────────────────── Eventos (presença) ─────────────────────────
+
+enum EventAudience {
+  TODOS
+  PLENOS
+  COORDENACAO
+}
+
+enum Attendance {
+  SIM
+  NAO
+  TALVEZ
+}
+
+model Event {
+  id           String          @id @default(cuid())
+  title        String
+  description  String?
+  startsAt     DateTime
+  location     String?
+  rsvpDeadline DateTime?
+  capacity     Int?
+  audience     EventAudience   @default(TODOS)
+  // Perguntas extras do formulário (FormField[])
+  fields       Json            @default("[]")
+  creatorId    String
+  creator      User            @relation(fields: [creatorId], references: [id])
+  createdAt    DateTime        @default(now())
+  responses    EventResponse[]
+}
+
+model EventResponse {
+  id         String     @id @default(cuid())
+  eventId    String
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendance Attendance
+  answers    Json       @default("{}")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([eventId, userId])
+}
+
+// ───────────────────────── Processo seletivo ─────────────────────────
+
+enum SelectionStatus {
+  RASCUNHO
+  INSCRICOES_ABERTAS
+  INSCRICOES_ENCERRADAS
+  FASE_2
+  FINALIZADO
+}
+
+enum CandidateStage {
+  INSCRITO
+  APROVADO_FASE_1
+  REPROVADO_FASE_1
+  APROVADO
+  REPROVADO
+}
+
+model SelectionProcess {
+  id                   String          @id @default(cuid())
+  title                String
+  description          String?
+  status               SelectionStatus @default(RASCUNHO)
+  // Fase 1: formulário (FormField[])
+  fields               Json            @default("[]")
+  registrationDeadline DateTime?
+  // Fase 2: encontro presencial
+  phase2Date           DateTime?
+  phase2Location       String?
+  phase2Notes          String?
+  creatorId            String
+  creator              User            @relation(fields: [creatorId], references: [id])
+  createdAt            DateTime        @default(now())
+  candidates           Candidate[]
+}
+
+model Candidate {
+  id             String           @id @default(cuid())
+  processId      String
+  process        SelectionProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  name           String
+  email          String
+  phone          String?
+  answers        Json             @default("{}")
+  stage          CandidateStage   @default(INSCRITO)
+  attendedPhase2 Boolean          @default(false)
+  notes          String?
+  createdAt      DateTime         @default(now())
+
+  @@unique([processId, email])
+}

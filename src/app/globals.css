@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
+/* Identidade visual Guardian: roxo #b41cb8, preto #191717, branco #ffffff */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0f0e0e;
+  --panel: #191717;
+  --panel-2: #211e1e;
+  --line: #2e2a2a;
+  --text: #f6f4f4;
+  --muted: #a39c9c;
+  --accent: #b41cb8;
+  --accent-hover: #c63bca;
+  /* roxo clareado para texto sobre fundo escuro (contraste AA) */
+  --accent-text: #e08de3;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-poppins);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Reserva sempre o espaço da barra de rolagem: o conteúdo não "pula" entre páginas curtas e longas */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Barras de rolagem finas e escuras (as padrão ficavam claras e grossas sobre o tema escuro) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3d3636 transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(180, 28, 184, 0.08), transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+::selection {
+  background: rgba(180, 28, 184, 0.45);
+}
+
+@layer components {
+  .card {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(180, 28, 184, 0.2);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .btn-ghost {
+    border-color: var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: #4a4242;
+  }
+  .btn-danger {
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.16);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+  }
+  .table {
+    width: 100%;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+  }
+  .table th {
+    background: var(--panel-2);
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding: 0.6rem 0.9rem;
+    white-space: nowrap;
+  }
+  .table td {
+    border-top: 1px solid var(--line);
+    padding: 0.6rem 0.9rem;
+    vertical-align: middle;
+  }
+  .table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.015);
+  }
+}
+
+/* Acessibilidade: foco visível para teclado, controles nativos na cor da marca */
+:where(a, button, summary, select, textarea, input[type="checkbox"], input[type="radio"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+summary {
+  cursor: pointer;
+}
+
+/* Carregamento no botão que enviou o formulário */
+.btn[data-submitting] {
+  cursor: progress;
+}
+.btn[data-submitting]::before {
+  content: "";
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: guardian-spin 0.6s linear infinite;
+}
+@keyframes guardian-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* LiveKit: integra ao tema e esconde o chat próprio (o portal já tem chat persistente) */
+.guardian-call {
+  --lk-bg: var(--panel);
+  --lk-accent-bg: var(--accent);
+}
+.guardian-call .lk-chat-toggle {
+  display: none;
 }
