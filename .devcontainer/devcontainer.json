@@ -1,0 +1,37 @@
+{
+  "name": "Portal Guardian",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // Mesmo caminho absoluto do host: o Claude Code identifica o histórico de conversas pelo caminho do projeto.
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "workspaceFolder": "${localWorkspaceFolder}",
+
+  // Histórico, memória e login do Claude Code compartilhados com o host.
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
+    "source=${localEnv:HOME}/.claude.json,target=/home/node/.claude.json,type=bind"
+  ],
+
+  // Postgres e LiveKit sobem no host (docker compose); a rede do host dá acesso a localhost:5432/7880
+  // e o LiveKit precisa de network_mode host para o WebRTC funcionar.
+  "initializeCommand": "docker compose up -d",
+  "runArgs": ["--network=host"],
+
+  "remoteUser": "node",
+  "postCreateCommand": "npm install --no-audit --no-fund && npx prisma migrate deploy && npx prisma db seed",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "Prisma.prisma"
+      ]
+    }
+  }
+}
