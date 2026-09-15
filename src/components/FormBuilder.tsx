@@ -2,7 +2,8 @@
 
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { FIELD_TYPE_LABELS, FIELD_TYPES, type FormField } from "@/lib/forms";
+import { FIELD_TYPE_LABELS, FIELD_TYPES } from "@/lib/form-fields";
+import type { FormField } from "@/lib/forms";
 
 type Draft = FormField & { optionsText: string };
 

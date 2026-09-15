@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getActiveUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hitRateLimit } from "@/lib/rate-limit";
 import { publishMessage } from "@/lib/realtime";
 import { getRoomForUser, toChatMessage } from "@/lib/rooms";
 
@@ -10,6 +11,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/rooms/[room
   const { roomId } = await ctx.params;
   const user = await getActiveUser();
   if (!user) return Response.json({ error: "Não autenticado" }, { status: 401 });
+  if (hitRateLimit(`chat:${user.id}`, 20, 10_000)) {
+    return Response.json({ error: "Muitas mensagens seguidas. Aguarde alguns segundos." }, { status: 429 });
+  }
   if (!(await getRoomForUser(roomId, user))) return Response.json({ error: "Sala não encontrada" }, { status: 404 });
 
   const body = bodySchema.safeParse(await request.json().catch(() => null));

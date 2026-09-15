@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/forms";
 import { getCurrentUser } from "@/lib/auth";
 import { logout } from "../(auth)/actions";
 
-export const metadata: Metadata = { title: "Aguardando aprovação" };
+export const metadata: Metadata = { title: "Aguardando aprovação", robots: { index: false, follow: false } };
 
 export default async function WaitingPage() {
   const user = await getCurrentUser();

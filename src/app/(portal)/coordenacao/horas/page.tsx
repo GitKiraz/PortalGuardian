@@ -173,7 +173,9 @@ export default async function HoursSheetPage({ searchParams }: PageProps<"/coord
               <th className="text-right">Registros</th>
               <th className="text-right">Horas no período</th>
               <th className="text-right">Total geral</th>
-              <th />
+              <th>
+                <span className="sr-only">Ações</span>
+              </th>
             </tr>
           </thead>
           <tbody>

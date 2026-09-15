@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getActiveUser } from "@/lib/auth";
-import { MAX_UPLOAD_BYTES } from "@/lib/constants";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_REQUEST_BYTES } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import { canAccessProject } from "@/lib/permissions";
 import { uploadDir, uploadPath } from "@/lib/uploads";
@@ -20,6 +20,10 @@ export async function POST(request: Request, ctx: RouteContext<"/api/projects/[p
     return Response.json({ error: "Projeto não encontrado" }, { status: 404 });
   }
 
+  // formData() carrega o corpo inteiro na memória: recusa antes envios muito grandes.
+  if (Number(request.headers.get("content-length")) > MAX_UPLOAD_REQUEST_BYTES) {
+    return Response.json({ error: "Envio muito grande. Mande no máximo 250 MB por vez." }, { status: 413 });
+  }
   const formData = await request.formData().catch(() => null);
   const files = (formData?.getAll("files") ?? []).filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return Response.json({ error: "Nenhum arquivo enviado" }, { status: 400 });

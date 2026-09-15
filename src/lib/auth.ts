@@ -19,6 +19,17 @@ export function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
+let dummyHash: Promise<string> | undefined;
+/** Hash descartável para o login gastar o mesmo tempo quando o email não existe. */
+export function dummyPasswordHash() {
+  dummyHash ??= hashPassword(randomBytes(16).toString("hex"));
+  return dummyHash;
+}
+
+// Em produção o cookie é Secure por padrão (navegadores aceitam em http://localhost).
+// COOKIE_SECURE="false" só para servir o portal sem HTTPS fora do localhost.
+const secureCookie = process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : process.env.NODE_ENV === "production";
+
 export async function createSession(userId: string) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
@@ -26,7 +37,7 @@ export async function createSession(userId: string) {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.COOKIE_SECURE === "true",
+    secure: secureCookie,
     path: "/",
     expires: expiresAt,
   });
@@ -37,6 +48,12 @@ export async function destroySession() {
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await prisma.session.deleteMany({ where: { id: hashToken(token) } });
   jar.delete(SESSION_COOKIE);
+}
+
+/** Encerra as sessões do usuário em outros dispositivos (ex.: após trocar a senha). */
+export async function revokeOtherSessions(userId: string) {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  await prisma.session.deleteMany({ where: { userId, ...(token ? { id: { not: hashToken(token) } } : {}) } });
 }
 
 /** Usuário logado (qualquer status) ou null. Memoizado por requisição. */
@@ -54,7 +71,11 @@ export const getCurrentUser = cache(async () => {
       },
     },
   });
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session) return null;
+  if (session.expiresAt < new Date()) {
+    await prisma.session.deleteMany({ where: { id: session.id } });
+    return null;
+  }
   return session.user;
 });
 

@@ -1,7 +1,9 @@
 type Cell = string | number | boolean | null | undefined;
 
 function escape(cell: Cell) {
-  const text = cell === null || cell === undefined ? "" : String(cell);
+  let text = cell === null || cell === undefined ? "" : String(cell);
+  // Injeção de fórmula: respostas como "=HYPERLINK(...)" (ex.: do formulário público) viram texto no Excel.
+  if (/^[=+\-@\t\r]/.test(text) && !/^[+-]?\d+([.,]\d+)?$/.test(text)) text = `'${text}`;
   return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

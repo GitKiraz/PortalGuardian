@@ -2,7 +2,7 @@
 
 import type { ActionState } from "@/components/forms";
 import { refreshPortal, text } from "@/lib/action-utils";
-import { hashPassword, requireUser, verifyPassword } from "@/lib/auth";
+import { hashPassword, requireUser, revokeOtherSessions, verifyPassword } from "@/lib/auth";
 import { isMauaCourse } from "@/lib/courses";
 import { prisma } from "@/lib/db";
 
@@ -35,5 +35,6 @@ export async function changePassword(_state: ActionState, formData: FormData): P
   if (next === current) return { error: "A nova senha precisa ser diferente da atual" };
 
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } });
-  return { success: "Senha alterada" };
+  await revokeOtherSessions(user.id);
+  return { success: "Senha alterada. As sessões em outros dispositivos foram encerradas." };
 }

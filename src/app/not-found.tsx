@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { connection } from "next/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  // Renderiza por requisição: páginas estáticas não recebem o nonce do CSP e teriam os scripts bloqueados.
+  await connection();
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <div className="card max-w-md text-center">

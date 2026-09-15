@@ -7,7 +7,12 @@ import { Field } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { login } from "../actions";
 
-export const metadata: Metadata = { title: "Entrar" };
+export const metadata: Metadata = {
+  title: "Entrar",
+  description: "Acesse o portal da Guardian Mauá, a entidade de Segurança da Informação do Instituto Mauá de Tecnologia.",
+  // /login?next=... (redirecionamentos do proxy) conta como a mesma página para buscadores.
+  alternates: { canonical: "/login" },
+};
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next } = await searchParams;
@@ -30,7 +35,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       </ActionForm>
       <p className="mt-6 text-center text-sm text-muted">
         Ainda não tem conta?{" "}
-        <Link href="/cadastro" className="text-accent-text hover:underline">
+        <Link href="/cadastro" className="text-accent-text underline underline-offset-2 hover:no-underline">
           Cadastre-se
         </Link>
       </p>

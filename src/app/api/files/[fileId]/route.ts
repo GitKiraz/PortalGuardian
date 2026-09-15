@@ -31,6 +31,9 @@ export async function GET(request: Request, ctx: RouteContext<"/api/files/[fileI
       "Content-Disposition": disposition,
       "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",
+      "Cross-Origin-Resource-Policy": "same-origin",
+      // Imagens e texto abertos no navegador rodam isolados (o visualizador de PDF do Chrome não funciona com sandbox).
+      ...(inline && file.mimeType !== "application/pdf" ? { "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self'" } : {}),
     },
   });
 }

@@ -1,14 +1,7 @@
 import { z } from "zod";
+import { FIELD_TYPES } from "./form-fields";
 
-export const FIELD_TYPES = ["text", "textarea", "number", "select", "checkbox"] as const;
-
-export const FIELD_TYPE_LABELS: Record<(typeof FIELD_TYPES)[number], string> = {
-  text: "Texto curto",
-  textarea: "Texto longo",
-  number: "Número",
-  select: "Múltipla escolha",
-  checkbox: "Caixa de seleção (sim/não)",
-};
+export { FIELD_TYPE_LABELS, FIELD_TYPES } from "./form-fields";
 
 export const formFieldSchema = z.object({
   id: z.string().min(1),

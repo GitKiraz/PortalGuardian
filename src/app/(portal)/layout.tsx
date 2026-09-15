@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { Sidebar, type NavSection } from "@/components/Sidebar";
 import { requireUser } from "@/lib/auth";
 import { roleLabel } from "@/lib/labels";
 import { isAdmin, isCoordination } from "@/lib/permissions";
 import { getAccessibleAreas } from "@/lib/queries";
 import { logout } from "../(auth)/actions";
+
+// Área logada: nunca indexar.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();

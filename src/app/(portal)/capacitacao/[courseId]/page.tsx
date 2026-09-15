@@ -6,7 +6,8 @@ import { Badge, Empty, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { plural } from "@/lib/format";
-import { youtubeEmbedUrl, youtubeId } from "@/lib/youtube";
+import { YouTubePlayer } from "@/components/YouTubePlayer";
+import { youtubeId } from "@/lib/youtube";
 import { setLessonCompleted } from "../actions";
 
 export async function generateMetadata({ params }: PageProps<"/capacitacao/[courseId]">): Promise<Metadata> {
@@ -63,13 +64,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
           <div>
             <div className="aspect-video overflow-hidden rounded-xl border border-line bg-black">
               {videoId ? (
-                <iframe
-                  src={youtubeEmbedUrl(videoId)}
-                  title={current.title}
-                  className="size-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                <YouTubePlayer key={videoId} videoId={videoId} title={current.title} />
               ) : (
                 <p className="grid size-full place-items-center text-sm text-muted">Link de vídeo inválido.</p>
               )}

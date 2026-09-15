@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { Brand } from "@/components/Brand";
 import { FormFields } from "@/components/FormFields";
 import { ActionForm } from "@/components/forms";
@@ -7,16 +8,34 @@ import { Field } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { parseStoredFields } from "@/lib/forms";
+import { SITE_NAME } from "@/lib/site";
 import { submitApplication } from "./actions";
 
+// Metadados e página compartilham a mesma consulta na requisição.
+const getProcess = cache((id: string) => prisma.selectionProcess.findUnique({ where: { id } }));
+
 export async function generateMetadata({ params }: PageProps<"/processo-seletivo/[processId]">): Promise<Metadata> {
-  const process = await prisma.selectionProcess.findUnique({ where: { id: (await params).processId }, select: { title: true, status: true } });
-  return { title: process && process.status !== "RASCUNHO" ? process.title : "Processo seletivo" };
+  const { processId } = await params;
+  const process = await getProcess(processId);
+  if (!process || process.status === "RASCUNHO") return { title: "Processo seletivo", robots: { index: false } };
+
+  const path = `/processo-seletivo/${processId}`;
+  const description =
+    process.description?.replace(/\s+/g, " ").slice(0, 160) ||
+    "Inscreva-se no processo seletivo da Guardian Mauá, a entidade de Segurança da Informação do Instituto Mauá de Tecnologia.";
+  return {
+    title: process.title,
+    description,
+    alternates: { canonical: path },
+    openGraph: { type: "website", locale: "pt_BR", siteName: SITE_NAME, url: path, title: `${process.title} · ${SITE_NAME}`, description },
+    // Processos encerrados saem das buscas.
+    robots: process.status === "INSCRICOES_ABERTAS" ? undefined : { index: false },
+  };
 }
 
 export default async function PublicApplicationPage({ params }: PageProps<"/processo-seletivo/[processId]">) {
   const { processId } = await params;
-  const process = await prisma.selectionProcess.findUnique({ where: { id: processId } });
+  const process = await getProcess(processId);
   if (!process || process.status === "RASCUNHO") notFound();
 
   const open =

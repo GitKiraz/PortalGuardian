@@ -8,7 +8,11 @@ import { Field } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth";
 import { register } from "../actions";
 
-export const metadata: Metadata = { title: "Cadastro" };
+export const metadata: Metadata = {
+  title: "Cadastro",
+  description: "Crie sua conta no portal da Guardian Mauá. Todo aluno começa como Junior e a coordenação aprova o acesso.",
+  alternates: { canonical: "/cadastro" },
+};
 
 export default async function RegisterPage() {
   if (await getCurrentUser()) redirect("/");
@@ -37,7 +41,7 @@ export default async function RegisterPage() {
       </ActionForm>
       <p className="mt-6 text-center text-sm text-muted">
         Já tem conta?{" "}
-        <Link href="/login" className="text-accent-text hover:underline">
+        <Link href="/login" className="text-accent-text underline underline-offset-2 hover:no-underline">
           Entrar
         </Link>
       </p>

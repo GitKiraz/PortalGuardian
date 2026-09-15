@@ -92,7 +92,9 @@ export default async function FinancePage({ searchParams }: PageProps<"/coordena
                     <th>Categoria</th>
                     <th className="text-right">Valor</th>
                     <th className="text-right">Saldo</th>
-                    <th />
+                    <th>
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

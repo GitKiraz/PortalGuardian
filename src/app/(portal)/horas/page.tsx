@@ -87,7 +87,9 @@ export default async function HoursPage() {
                     <th>Horas</th>
                     <th>Área</th>
                     <th>Atividade</th>
-                    <th />
+                    <th>
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

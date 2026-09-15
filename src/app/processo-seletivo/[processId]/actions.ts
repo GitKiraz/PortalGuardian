@@ -5,6 +5,7 @@ import type { ActionState } from "@/components/forms";
 import { text } from "@/lib/action-utils";
 import { prisma } from "@/lib/db";
 import { collectAnswers, parseStoredFields } from "@/lib/forms";
+import { clientIp, hitRateLimit, tooManyAttempts } from "@/lib/rate-limit";
 
 const SUCCESS = "Inscrição enviada! Fique de olho no seu email para os próximos passos.";
 
@@ -17,6 +18,9 @@ const candidateSchema = z.object({
 export async function submitApplication(processId: string, _state: ActionState, formData: FormData): Promise<ActionState> {
   // Honeypot: bots preenchem o campo escondido.
   if (text(formData, "website")) return { success: SUCCESS };
+  // Formulário público: limite por IP folgado, porque inscrições no campus saem do mesmo IP.
+  const wait = hitRateLimit(`application:${await clientIp()}`, 30, 60 * 60 * 1000);
+  if (wait) return { error: tooManyAttempts(wait) };
 
   const process = await prisma.selectionProcess.findUnique({ where: { id: processId } });
   const open =

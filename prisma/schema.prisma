@@ -93,6 +93,7 @@ model AreaMember {
   area     Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
 
   @@id([userId, areaId])
+  @@index([areaId])
 }
 
 // ───────────────────────── Capacitação ─────────────────────────
@@ -146,6 +147,9 @@ model PromotionRequest {
   reviewer   User?         @relation("PromotionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
   reviewedAt DateTime?
   createdAt  DateTime      @default(now())
+
+  @@index([userId, status])
+  @@index([status])
 }
 
 // ───────────────────────── Projetos, salas e arquivos ─────────────────────────
@@ -186,6 +190,8 @@ model ProjectMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+  // "Meus projetos" busca pelo aluno
+  @@index([userId])
 }
 
 model ProjectFile {
@@ -199,6 +205,8 @@ model ProjectFile {
   mimeType     String
   size         Int
   createdAt    DateTime @default(now())
+
+  @@index([projectId, createdAt])
 }
 
 enum RoomKind {
@@ -248,6 +256,9 @@ model Meeting {
   creator     User     @relation(fields: [creatorId], references: [id])
   createdAt   DateTime @default(now())
   room        Room?
+
+  @@index([startsAt])
+  @@index([projectId, startsAt])
 }
 
 // ───────────────────────── Horas ─────────────────────────
@@ -273,6 +284,8 @@ model HourEntry {
   createdAt  DateTime   @default(now())
 
   @@index([userId, date])
+  // Planilha da coordenação filtra só por período
+  @@index([date])
 }
 
 // ───────────────────────── Financeiro ─────────────────────────
@@ -326,6 +339,8 @@ model Event {
   creator      User            @relation(fields: [creatorId], references: [id])
   createdAt    DateTime        @default(now())
   responses    EventResponse[]
+
+  @@index([startsAt])
 }
 
 model EventResponse {

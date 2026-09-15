@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: guardian
       POSTGRES_DB: guardian
     ports:
-      - "5432:5432"
+      # Só localhost: o banco não fica exposto na rede com a senha padrão.
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 

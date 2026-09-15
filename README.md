@@ -77,7 +77,11 @@ Requisitos: Docker e VS Code com a extensão Dev Containers (ou a CLI `@devconta
   - exponha o LiveKit via `wss://` e defina `LIVEKIT_URL` (ex.: `wss://voz.seudominio.com`);
   - libere as portas 7881/tcp e 7882/udp no firewall.
   - Guia: https://docs.livekit.io/home/self-hosting/deployment/
-- `COOKIE_SECURE="true"` quando o portal estiver em HTTPS.
+- Defina `SITE_URL` com o endereço público (ex.: `https://portal.guardianmaua.com.br`). Ele é usado nos links de compartilhamento (Open Graph), no `sitemap.xml` e no `robots.txt`.
+- Em produção o cookie de sessão é `Secure` por padrão. Use `COOKIE_SECURE="false"` apenas se servir o portal sem HTTPS fora do `localhost`.
+- O proxy reverso precisa repassar `X-Forwarded-For` (ou `X-Real-IP`) com o IP real do aluno: os limites de tentativas de login, cadastro e inscrição usam esse IP. Sem isso, todos contam como o mesmo IP.
+- Segurança já configurada: CSP com nonce em `src/proxy.ts` (se o LiveKit ficar em outro domínio, `LIVEKIT_URL` entra automaticamente no `connect-src`) e demais cabeçalhos em `next.config.ts`.
+- O Postgres do `docker-compose.yml` escuta só em `127.0.0.1`. Troque a senha padrão `guardian` em produção.
 - Faça backup do volume do Postgres e da pasta `UPLOAD_DIR`, onde ficam os arquivos dos projetos.
 - O chat usa um barramento em memória, então rode **uma única instância** do servidor Next. Para escalar horizontalmente, troque `src/lib/realtime.ts` por Postgres LISTEN/NOTIFY ou Redis.
 

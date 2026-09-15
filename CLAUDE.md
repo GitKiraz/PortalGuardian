@@ -40,7 +40,21 @@ Portal da entidade de Segurança da Informação Guardian Mauá (Instituto Mauá
 - Páginas dinâmicas definem `generateMetadata` (título da aba) respeitando as mesmas permissões da página.
 - Alinhamento: `html { scrollbar-gutter: stable }` evita que o conteúdo pule entre páginas curtas/longas; o conteúdo do portal fica alinhado ao menu (`max-w-7xl`, sem `mx-auto`). Não centralize o conteúdo no espaço ao lado do menu.
 
+## Segurança, SEO e performance (manter ao mexer)
+
+- **CSP com nonce** em `src/proxy.ts` (script-src `'strict-dynamic'`): toda página precisa ser dinâmica (página estática não recebe nonce e tem os scripts bloqueados; por isso `not-found.tsx` chama `connection()`). Domínio externo novo (iframe, imagem, websocket) precisa entrar na CSP. Demais cabeçalhos em `next.config.ts`.
+- **Nada de zod (ou lib pesada) em componente cliente**: o zod 4 testa `new Function` e dispara violação de CSP. Constantes compartilhadas ficam em módulos sem dependências (ex.: `src/lib/form-fields.ts`).
+- **Rate limit** em memória (`src/lib/rate-limit.ts`): login (só erros, por email e IP), cadastro, inscrição pública e chat. Formulários públicos novos devem usar. Limites de IP são folgados porque o campus sai por NAT.
+- Redirecionamentos com destino vindo do usuário passam por validação de caminho interno (ver `safeRedirectPath` em `(auth)/actions.ts`).
+- CSV: `csvResponse` neutraliza injeção de fórmula; sempre exporte por ele.
+- Área logada tem `noindex` (layout do portal). Páginas públicas definem `description`, `alternates.canonical` e Open Graph; imagens OG são geradas com `OgCard` (`next/og`). `SITE_URL` alimenta `metadataBase`, sitemap e robots.
+- Vídeos do YouTube: use `YouTubePlayer` (capa + player só ao clicar), nunca `<iframe>` direto.
+- Fontes: só pesos/subsets usados (Poppins 600 latin). Fonte usada em toda página (inclusive Geist Mono do `Brand`) mantém preload.
+
 ## Pendências / ideias
+
+- Rate limit e barramento do chat são em memória: para mais de uma instância, trocar por Redis/Postgres.
+- Revogação imediata: aluno removido de projeto continua com o SSE aberto e o token LiveKit (6h) até reconectar.
 
 - Notificações por email (aprovação de cadastro, processo seletivo) ainda não existem.
 - Configuração de produção do LiveKit (chaves, TLS) não está feita; veja o README.

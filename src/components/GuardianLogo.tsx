@@ -4,19 +4,24 @@
  */
 export function GuardianLogo({
   className,
+  width,
+  height,
   body = "#000000",
   crown = "#b41cb8",
   ring = "#e6e6e6",
   stripe = "#ffffff",
 }: {
   className?: string;
+  /** Tamanho fixo (necessário nas imagens geradas pelo next/og, que ignoram className). */
+  width?: number;
+  height?: number;
   body?: string;
   crown?: string;
   ring?: string;
   stripe?: string;
 }) {
   return (
-    <svg viewBox="0 0 600 626" className={className} role="img" aria-label="Guardian">
+    <svg viewBox="0 0 600 626" width={width} height={height} className={className} role="img" aria-label="Guardian">
       <polygon fill={crown} points="307,32 371,32 371,75 395,75 395,0 449,0 449,76 473,76 473,44 530,44 530,122 313,122" />
       <g fill={body}>
         <circle cx="416.5" cy="323.6" r="182.7" />
