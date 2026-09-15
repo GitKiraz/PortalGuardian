@@ -14,7 +14,7 @@ Portal da entidade de Segurança da Informação Guardian Mauá (Instituto Mauá
 ## Decisões de arquitetura
 
 - **Áreas são registros no banco** (model `Area`), não enum. A entidade vai abrir novas frentes (Serviços, Competições, Simulação, Soluções), que o admin cria em /coordenacao/areas. `isGlobal` marca áreas abertas a todos (Registro).
-- **Permissões** centralizadas em `src/lib/permissions.ts`. Admin = DEV, PRESIDENTE, VICE_PRESIDENTE. Coordenador = `role COORDENADOR` + `Area.coordinatorId` (único por área). Pleno acessa uma área não global só se for `AreaMember`.
+- **Permissões** centralizadas em `src/lib/permissions.ts`. Admin = DEV, PRESIDENTE, VICE_PRESIDENTE. Coordenador = `role COORDENADOR` + `Area.coordinatorId` (único por área). Pleno acessa uma área não global só se for `AreaMember`. Qualquer coordenador (e admin) vê todas as áreas e projetos, mas só gerencia a própria área. Em área global (Registro) só a coordenação cria projetos (`canCreateProject`). Projeto novo em área não global já inclui todos os `AreaMember` como integrantes.
 - **Promoção a Pleno** exige aprovação: concluir cursos com `requiredForPleno` cria um `PromotionRequest` PENDENTE, e a coordenação aprova no painel.
 - **Cadastro** cria usuário PENDENTE/JUNIOR; a coordenação aprova.
 - **Sessão**: token aleatório em cookie httpOnly, com sha256 guardado na tabela `Session`. `getCurrentUser()` usa `cache()` por request. Páginas usam `requireUser`/`requireCoordination`/`requireAdmin`; server actions revalidam permissão sempre.

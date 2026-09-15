@@ -10,7 +10,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { plural } from "@/lib/format";
 import { PROJECT_STATUS_LABELS, ROLE_LABELS } from "@/lib/labels";
-import { canAccessArea, canManageArea } from "@/lib/permissions";
+import { canAccessArea, canCreateProject, canManageArea } from "@/lib/permissions";
 import { getAreaBySlug, getUpcomingMeetings } from "@/lib/queries";
 import { addAreaMember, createProject, removeAreaMember } from "../actions";
 
@@ -36,6 +36,7 @@ export default async function AreaPage({ params }: PageProps<"/areas/[slug]">) {
   }
 
   const manage = canManageArea(user, area);
+  const createProjects = canCreateProject(user, area);
   const [projects, meetings, members, candidates] = await Promise.all([
     prisma.project.findMany({
       where: { areaId: area.id },
@@ -80,7 +81,7 @@ export default async function AreaPage({ params }: PageProps<"/areas/[slug]">) {
         <div className="space-y-6">
           <Card title={`Projetos (${projects.length})`}>
             {projects.length === 0 ? (
-              <Empty>Nenhum projeto ainda. Inicie o primeiro abaixo.</Empty>
+              <Empty>{createProjects ? "Nenhum projeto ainda. Inicie o primeiro abaixo." : "Nenhum projeto ainda."}</Empty>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {projects.map((project) => {
@@ -110,20 +111,25 @@ export default async function AreaPage({ params }: PageProps<"/areas/[slug]">) {
             )}
           </Card>
 
-          <Card title="Iniciar novo projeto">
-            <ActionForm action={createProject.bind(null, area.id)} className="grid gap-3 sm:grid-cols-2">
-              <Field label="Nome do projeto" className="sm:col-span-2">
-                <input className="input" name="name" required minLength={3} />
-              </Field>
-              <Field label="Descrição" className="sm:col-span-2">
-                <textarea className="input" name="description" rows={3} />
-              </Field>
-              <Field label="Repositório no GitHub (opcional)" className="sm:col-span-2">
-                <input className="input" name="repositoryUrl" type="url" placeholder="https://github.com/guardian-maua/…" />
-              </Field>
-              <button className="btn btn-primary sm:col-span-2">Criar projeto</button>
-            </ActionForm>
-          </Card>
+          {createProjects && (
+            <Card title="Iniciar novo projeto">
+              {!area.isGlobal && (
+                <p className="-mt-1 mb-3 text-sm text-muted">Todos os integrantes da área entram no projeto automaticamente.</p>
+              )}
+              <ActionForm action={createProject.bind(null, area.id)} className="grid gap-3 sm:grid-cols-2">
+                <Field label="Nome do projeto" className="sm:col-span-2">
+                  <input className="input" name="name" required minLength={3} />
+                </Field>
+                <Field label="Descrição" className="sm:col-span-2">
+                  <textarea className="input" name="description" rows={3} />
+                </Field>
+                <Field label="Repositório no GitHub (opcional)" className="sm:col-span-2">
+                  <input className="input" name="repositoryUrl" type="url" placeholder="https://github.com/guardian-maua/…" />
+                </Field>
+                <button className="btn btn-primary sm:col-span-2">Criar projeto</button>
+              </ActionForm>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-6">

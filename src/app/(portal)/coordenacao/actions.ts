@@ -73,6 +73,26 @@ export async function updateUserRole(userId: string, _state: ActionState, formDa
   return { success: "Cargo atualizado" };
 }
 
+/** Define de quais áreas não globais o aluno é integrante (substitui a lista atual). */
+export async function updateUserAreas(userId: string, _state: ActionState, formData: FormData): Promise<ActionState> {
+  const actor = await requireAdminAction();
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) return { error: "Usuário não encontrado" };
+  if (target.role === "DEV" && actor.role !== "DEV") return { error: "Apenas o Dev pode alterar outro Dev" };
+
+  const selected = formData.getAll("areaIds").filter((value): value is string => typeof value === "string");
+  if (selected.length > 0 && target.role === "JUNIOR") return { error: "Apenas alunos Plenos podem integrar áreas" };
+  const areas = await prisma.area.findMany({ where: { id: { in: selected }, isGlobal: false }, select: { id: true } });
+  const areaIds = areas.map((area) => area.id);
+
+  await prisma.$transaction([
+    prisma.areaMember.deleteMany({ where: { userId: target.id, areaId: { notIn: areaIds } } }),
+    prisma.areaMember.createMany({ data: areaIds.map((areaId) => ({ userId: target.id, areaId })), skipDuplicates: true }),
+  ]);
+  refreshPortal();
+  return { success: "Áreas atualizadas" };
+}
+
 export async function resetUserPassword(userId: string, _state: ActionState, formData: FormData): Promise<ActionState> {
   const actor = await requireAdminAction();
   const password = String(formData.get("password") ?? "");

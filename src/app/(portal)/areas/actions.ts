@@ -7,7 +7,7 @@ import type { ActionState } from "@/components/forms";
 import { isHttpUrl, optionalText, PermissionError, refreshPortal, text } from "@/lib/action-utils";
 import { requireUser, type CurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canAccessArea, canAccessProject, canManageArea, isPlenoOrAbove } from "@/lib/permissions";
+import { canAccessArea, canAccessProject, canCreateProject, canManageArea, isPlenoOrAbove } from "@/lib/permissions";
 import { uploadPath } from "@/lib/uploads";
 
 const PROJECT_STATUSES: ProjectStatus[] = ["ATIVO", "PAUSADO", "CONCLUIDO"];
@@ -43,12 +43,21 @@ export async function createProject(areaId: string, _state: ActionState, formDat
   const user = await requireUser();
   const area = await prisma.area.findUnique({ where: { id: areaId } });
   if (!area || !canAccessArea(user, area)) return { error: "Sem acesso a esta área" };
+  if (!canCreateProject(user, area)) return { error: "Apenas a coordenação pode criar projetos nesta área" };
 
   const name = text(formData, "name");
   const repositoryUrl = optionalText(formData, "repositoryUrl");
   if (name.length < 3) return { error: "Dê um nome ao projeto (mín. 3 caracteres)" };
   const repoError = validateRepository(repositoryUrl);
   if (repoError) return { error: repoError };
+
+  // Todo projeto novo de uma área não global já inclui os integrantes da área.
+  const areaMembers = area.isGlobal
+    ? []
+    : await prisma.areaMember.findMany({
+        where: { areaId, userId: { not: user.id }, user: { status: "ATIVO", role: { not: "JUNIOR" } } },
+        select: { userId: true },
+      });
 
   const project = await prisma.project.create({
     data: {
@@ -57,7 +66,7 @@ export async function createProject(areaId: string, _state: ActionState, formDat
       description: optionalText(formData, "description"),
       repositoryUrl,
       creatorId: user.id,
-      members: { create: { userId: user.id, isLead: true } },
+      members: { create: [{ userId: user.id, isLead: true }, ...areaMembers.map(({ userId }) => ({ userId }))] },
       room: { create: { kind: "PROJETO", name } },
     },
   });

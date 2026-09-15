@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
 import { formatHours, plural } from "@/lib/format";
 import { ROLE_LABELS, ROLES, roleLabel, USER_STATUS_LABELS } from "@/lib/labels";
 import { canAssignRole, isAdmin } from "@/lib/permissions";
-import { approveUser, rejectUser, resetUserPassword, setUserActive, updateUserRole } from "../actions";
+import { approveUser, rejectUser, resetUserPassword, setUserActive, updateUserAreas, updateUserRole } from "../actions";
 
 export const metadata: Metadata = { title: "Membros" };
 
@@ -117,7 +117,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/coordena
                   {manageable && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-xs text-accent-text">Gerenciar</summary>
-                      <div className="mt-3 grid gap-4 rounded-lg border border-line bg-panel-2 p-4 md:grid-cols-3">
+                      <div className="mt-3 grid gap-4 rounded-lg border border-line bg-panel-2 p-4 md:grid-cols-2 xl:grid-cols-4">
                         <ActionForm action={updateUserRole.bind(null, user.id)} className="flex flex-col gap-2" resetOnSuccess={false}>
                           <span className="label">Cargo</span>
                           <select className="input" name="role" aria-label="Cargo" defaultValue={user.role}>
@@ -138,6 +138,31 @@ export default async function MembersPage({ searchParams }: PageProps<"/coordena
                           </select>
                           <button className="btn btn-primary btn-sm">Salvar cargo</button>
                         </ActionForm>
+
+                        {user.role === "JUNIOR" ? (
+                          <div className="flex flex-col gap-2">
+                            <span className="label">Áreas</span>
+                            <p className="text-xs text-muted">Promova a Pleno para incluir em áreas.</p>
+                          </div>
+                        ) : (
+                          <ActionForm action={updateUserAreas.bind(null, user.id)} className="flex flex-col gap-2" resetOnSuccess={false}>
+                            <span className="label">Áreas</span>
+                            {areas
+                              .filter((area) => !area.isGlobal)
+                              .map((area) => (
+                                <label key={area.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    name="areaIds"
+                                    value={area.id}
+                                    defaultChecked={user.areaMemberships.some((m) => m.areaId === area.id)}
+                                  />
+                                  {area.name}
+                                </label>
+                              ))}
+                            <button className="btn btn-primary btn-sm">Salvar áreas</button>
+                          </ActionForm>
+                        )}
 
                         <ActionForm action={resetUserPassword.bind(null, user.id)} className="flex flex-col gap-2" resetOnSuccess={false}>
                           <span className="label">Redefinir senha</span>

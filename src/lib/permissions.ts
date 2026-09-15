@@ -25,11 +25,14 @@ export function isPlenoOrAbove(user: PermissionUser) {
   return user.role !== "JUNIOR";
 }
 
-/** Áreas globais (Registro) são de todos; as demais exigem ser Pleno e integrante (ou coordenador / admin). */
-export function canAccessArea(user: PermissionUser, area: AreaRef) {
-  if (area.isGlobal) return true;
-  if (canManageArea(user, area)) return true;
+function isAreaMember(user: PermissionUser, area: { id: string }) {
   return isPlenoOrAbove(user) && user.areaMemberships.some((m) => m.areaId === area.id);
+}
+
+/** Áreas globais (Registro) são de todos; a coordenação vê todas; as demais exigem ser Pleno e integrante. */
+export function canAccessArea(user: PermissionUser, area: AreaRef) {
+  if (area.isGlobal || isCoordination(user)) return true;
+  return isAreaMember(user, area);
 }
 
 /** Coordenador da área ou admin. */
@@ -37,8 +40,15 @@ export function canManageArea(user: PermissionUser, area: { id: string }) {
   return isAdmin(user) || (user.role === "COORDENADOR" && user.coordinatedArea?.id === area.id);
 }
 
+/** Em áreas globais (Registro) só a coordenação cria projetos; nas demais, o coordenador da área, admins e integrantes. */
+export function canCreateProject(user: PermissionUser, area: AreaRef) {
+  if (area.isGlobal) return isCoordination(user);
+  return canManageArea(user, area) || isAreaMember(user, area);
+}
+
+/** A coordenação vê todos os projetos; os demais precisam acessar a área e integrar o projeto. */
 export function canAccessProject(user: PermissionUser, project: { area: AreaRef; members: { userId: string }[] }) {
-  if (canManageArea(user, project.area)) return true;
+  if (isCoordination(user)) return true;
   return canAccessArea(user, project.area) && project.members.some((m) => m.userId === user.id);
 }
 
